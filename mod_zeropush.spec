@@ -1,5 +1,5 @@
 author: "Riccardo Granchi <riccardo.granchi at nems.it"
-category: "data"
+category: "http"
 summary: "ZeroPush Module"
-home: "http://nems.it/ejabberd/mod_zero_push"
-url: "riccardo.granchi@nems.it:ejabberd/mod_zero_push.git"
+home: "https://bitbucket.org/nems/mod_zeropush"
+url: "https://granchir@bitbucket.org/nems/mod_zeropush.git"
