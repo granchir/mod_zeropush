@@ -30,32 +30,58 @@
 
 -behaviour(gen_mod).
 
+-include("xmpp.hrl").
+-include("logger.hrl").
+
 -export([start/2,
-	 init/2,
 	 stop/1,
+	 reload/3,
+	 depends/2,
+	 mod_opt_type/1,
+	 mod_options/1,
+	 mod_doc/0,
+	 init/2,
 	 send_notice/3]).
+
+-ifndef(LAGER).
+-define(LAGER, 1).
+-endif.
 
 -define(PROCNAME, ?MODULE).
 
--include("ejabberd.hrl").
--include("jlib.hrl").
--include("logger.hrl").
-
 start(Host, Opts) ->
-    ?INFO_MSG("Starting mod_offline_post", [] ),
+    ?INFO_MSG("Starting mod_zeropush", [] ),
     register(?PROCNAME,spawn(?MODULE, init, [Host, Opts])),  
     ok.
+
+stop(Host) ->
+    ?INFO_MSG("Stopping mod_zeropush", [] ),
+    ejabberd_hooks:delete(offline_message_hook, Host,
+			  ?MODULE, send_notice, 10),
+    ok.
+
+reload(_Host, _NewOpts, _OldOpts) ->
+    ok.
+
+mod_opt_type(sound) -> fun binary_to_list/1;
+mod_opt_type(auth_token) -> fun binary_to_list/1;
+mod_opt_type(post_url) -> fun binary_to_list/1.
+
+mod_options(_Host) ->
+    [{sound, <<"default">>},
+     {auth_token, <<"my-token">>},
+     {post_url, <<"https://api.zeropush.com/broadcast">>}].
+
+depends(_Host, _Opts) ->
+    [].
+
+mod_doc() ->
+    [].
 
 init(Host, _Opts) ->
     inets:start(),
     ssl:start(),
     ejabberd_hooks:add(offline_message_hook, Host, ?MODULE, send_notice, 10),
-    ok.
-
-stop(Host) ->
-    ?INFO_MSG("Stopping mod_offline_post", [] ),
-    ejabberd_hooks:delete(offline_message_hook, Host,
-			  ?MODULE, send_notice, 10),
     ok.
 
 send_notice(From, To, Packet) ->
@@ -80,7 +106,6 @@ send_notice(From, To, Packet) ->
       true ->
         ok
     end.
-
 
 %%% The following url encoding code is from the yaws project and retains it's original license.
 %%% https://github.com/klacke/yaws/blob/master/LICENSE
