@@ -41,7 +41,6 @@
 	 mod_options/1,
 	 mod_doc/0,
 	 init/2,
-%	 send_notice/3,
 	 send_notice/1]).
 
 -ifndef(LAGER).
@@ -87,14 +86,10 @@ init(Host, _Opts) ->
 
 send_notice({_Action,Packet}) ->
 
+	Type = xmpp:get_type(Packet),
 	From = xmpp:get_from(Packet),
 	To =  xmpp:get_to(Packet),
-	#jid{user = LUser, lserver = LServer} = From,
-	#jid{user = LReceiverUser, lserver = _LReceiverServer} = To,
-	?INFO_MSG("This is from ~p and this is to ~p", [From,To]),
-
-	Type = xmpp:get_type(Packet),
-	?INFO_MSG("This is type ~p", [Type]),
+	?INFO_MSG("This is type ~p from ~p to ~p", [Type, From, To]),
 
     if (Type == chat) orelse (Type == groupchat)  ->
 
@@ -103,26 +98,30 @@ send_notice({_Action,Packet}) ->
 
         if (Body /= <<>>)  ->
 
-           	Sound = get_opt(LServer, sound),
+            #jid{lserver = LServer} = From,
+
+            Sound = get_opt(LServer, sound),
             Token = get_opt(LServer, auth_token),
             PostUrl = get_opt(LServer, post_url),
 
-            BodyMessage = "server="++erlang:binary_to_list(misc:url_encode(LServer))++
-            "&sender="++erlang:binary_to_list(misc:url_encode(LUser))++
-            "&receiver="++erlang:binary_to_list(misc:url_encode(LReceiverUser))++
-            "&body="++erlang:binary_to_list(misc:url_encode(Body)),
-            ?INFO_MSG("Need store body ~p and ~p",[BodyMessage,LUser]),
+%%%         BodyMessage = "server="++erlang:binary_to_list(misc:url_encode(From#jid.lserver))++
+%%%             "&sender="++erlang:binary_to_list(misc:url_encode(From#jid.luser))++
+%%%             "&receiver="++erlang:binary_to_list(misc:url_encode(To#jid.luser))++
+%%%             "&body="++erlang:binary_to_list(misc:url_encode(Body)),
+%%%         ?INFO_MSG("Need store body ~p and ~p",[BodyMessage,LUser]),
 
             Sep = "&",
             Post = [
-            "alert=", url_encode(binary_to_list(Body)), Sep,
-            "badge=", url_encode("+1"), Sep,
-            "sound=", Sound, Sep,
-            "channel=", To#jid.luser, Sep,
-            "info[from]=", From#jid.luser, Sep,
-            "auth_token=", Token],
+                "server=", url_encode(binary_to_list(From#jid.lserver)), Sep,
+                "from=", From#jid.luser, Sep,
+                "to=", To#jid.luser, Sep,
+                "body=", url_encode(binary_to_list(Body)), Sep,
+                "badge=", url_encode("+1"), Sep,
+                "sound=", Sound, Sep,
+                "auth_token=", Token],
             ?INFO_MSG("Sending post request to ~s with body \"~s\"", [PostUrl, Post]),
-            httpc:request(post, {PostUrl, [], "application/x-www-form-urlencoded", BodyMessage},[],[]),
+
+            httpc:request(post, {PostUrl, [], "application/x-www-form-urlencoded", list_to_binary(Post)},[],[]),
             ok;
         true ->
             ok
