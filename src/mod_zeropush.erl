@@ -57,7 +57,7 @@ start(Host, Opts) ->
 stop(Host) ->
     ?INFO_MSG("Stopping mod_zeropush", [] ),
     ejabberd_hooks:delete(offline_message_hook, Host,
-			  ?MODULE, send_notice, 10),
+			  ?MODULE, send_notice, 50),
     ok.
 
 reload(_Host, _NewOpts, _OldOpts) ->
@@ -81,7 +81,7 @@ mod_doc() ->
 init(Host, _Opts) ->
     inets:start(),
     ssl:start(),
-    ejabberd_hooks:add(offline_message_hook, Host, ?MODULE, send_notice, 10),
+    ejabberd_hooks:add(offline_message_hook, Host, ?MODULE, send_notice, 50),
     ok.
 
 send_notice({_Action,Packet}) ->
