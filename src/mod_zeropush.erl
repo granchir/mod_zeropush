@@ -81,14 +81,10 @@ mod_doc() ->
 init(Host, _Opts) ->
     inets:start(),
     ssl:start(),
-    ejabberd_hooks:add(offline_message_hook, Host, ?MODULE, send_notice, 50),
+    ejabberd_hooks:add(offline_message_hook, Host, ?MODULE, send_notice, 10),
     ok.
 
-send_notice({_Action,Packet}) ->
-
-	Type = xmpp:get_type(Packet),
-	From = xmpp:get_from(Packet),
-	To =  xmpp:get_to(Packet),
+send_notice({_Action, #message{type = Type, from = From, to = To} = Packet} = Acc) ->
 	?INFO_MSG("This is type ~p from ~p to ~p", [Type, From, To]),
 
     if (Type == chat) orelse (Type == groupchat)  ->
@@ -122,12 +118,12 @@ send_notice({_Action,Packet}) ->
             ?INFO_MSG("Sending post request to ~s with body \"~s\"", [PostUrl, Post]),
 
             httpc:request(post, {PostUrl, [], "application/x-www-form-urlencoded", list_to_binary(Post)},[],[]),
-            ok;
+            Acc;
         true ->
-            ok
+            Acc
         end;
     true ->
-        ok
+        Acc
     end.
 
 get_opt(LServer, Opt) ->
