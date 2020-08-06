@@ -31,7 +31,7 @@
 -behaviour(gen_mod).
 
 -include("xmpp.hrl").
--include("logger.hrl").
+-include("lager.hrl").
 
 -export([start/2,
 	 stop/1,
@@ -50,12 +50,12 @@
 -define(PROCNAME, ?MODULE).
 
 start(Host, Opts) ->
-    ?INFO_MSG("Starting mod_zeropush", [] ),
+    ?INT_LOG(info, "Starting mod_zeropush", []),
     register(?PROCNAME,spawn(?MODULE, init, [Host, Opts])),  
     ok.
 
 stop(Host) ->
-    ?INFO_MSG("Stopping mod_zeropush", [] ),
+    ?INT_LOG(info, "Stopping mod_zeropush", []),
     ejabberd_hooks:delete(offline_message_hook, Host,
 			  ?MODULE, send_notice, 50),
     ok.
@@ -85,12 +85,12 @@ init(Host, _Opts) ->
     ok.
 
 send_notice({_Action, #message{type = Type, from = From, to = To} = Packet} = Acc) ->
-	?INFO_MSG("This is type ~p from ~p to ~p", [Type, From, To]),
+    ?INT_LOG(debug, "This is type ~p from ~p to ~p", [Type, From, To]),
 
     if (Type == chat) orelse (Type == groupchat)  ->
 
-    	Body = xmpp:get_text(Packet#message.body),
-    	?INFO_MSG("This is Operator and packet name ~p", [Body]),
+        Body = xmpp:get_text(Packet#message.body),
+        ?INT_LOG(debug, "This is Operator and packet name ~p", [Body]),
 
         if (Body /= <<>>)  ->
 
@@ -115,7 +115,7 @@ send_notice({_Action, #message{type = Type, from = From, to = To} = Packet} = Ac
                 "badge=", url_encode("+1"), Sep,
                 "sound=", Sound, Sep,
                 "auth_token=", Token],
-            ?INFO_MSG("Sending post request to ~s with body \"~s\"", [PostUrl, Post]),
+            ?INT_LOG(info, "Sending post request to ~s with body \"~s\"", [PostUrl, Post]),
 
             httpc:request(post, {PostUrl, [], "application/x-www-form-urlencoded", list_to_binary(Post)},[],[]),
             Acc;
